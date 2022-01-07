@@ -30,7 +30,10 @@ Using packer.nvim (should probably be registered _after_ `lspconfig`):
 ```lua
 use({
   "https://git.sr.ht/~whynothugo/lsp_lines.nvim",
-  config = [[require("lsp_lines").register_lsp_virtual_lines()]],
+  config = function()
+    require("lsp_lines").register_lsp_virtual_lines()
+  end,
+  requires = { "folke/trouble.nvim" },
 })
 ```
 
