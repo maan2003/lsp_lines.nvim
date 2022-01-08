@@ -37,7 +37,6 @@ M.register_lsp_virtual_lines = function()
 
   vim.diagnostic.handlers.virtual_lines = {
     show = function(namespace, bufnr, diagnostics, opts)
-      print(vim.inspect(opts))
       local ns = vim.diagnostic.get_namespace(namespace)
       if not ns.user_data.virt_lines_ns then
         ns.user_data.virt_lines_ns = vim.api.nvim_create_namespace("")
