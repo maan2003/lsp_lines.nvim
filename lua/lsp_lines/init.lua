@@ -29,70 +29,49 @@ local function get_indentation_for_line(bufnr, lnum)
   return ""
 end
 
--- Update diagnostics for a given buffer.
--- @param bufnr integer
-local function update_buf(bufnr)
-  local ns_id = vim.api.nvim_create_namespace("nl.whynothugo.lsp-virtual-lines")
-  vim.api.nvim_buf_clear_namespace(bufnr, ns_id, 0, -1)
-
-  local diagnostics = vim.diagnostic.get(bufnr)
-  if vim.tbl_isempty(diagnostics) then
-    return
-  end
-
-  for i, diagnostic in ipairs(diagnostics) do
-    vim.api.nvim_buf_set_extmark(bufnr, ns_id, diagnostic.lnum, 0, {
-      id = i,
-      virt_lines = {
-        {
-          {
-            get_indentation_for_line(bufnr, diagnostic.lnum),
-            "",
-          },
-          {
-            "▼ " .. diagnostic.message,
-            highlight_groups[diagnostic.severity],
-          },
-        },
-      },
-      virt_lines_above = true,
-    })
-  end
-end
-
 -- Registers a wrapper-handler to render lsp lines.
 -- This should usually only be called once, during initialisation.
 M.register_lsp_virtual_lines = function()
   -- TODO: When a diagnostic changes for the current line, the cursor is not shifted properly.
   -- TODO: On LSP restart (e.g.: diagnostics cleared), errors don't go away.
 
-  local orig_handler = vim.lsp.handlers["textDocument/publishDiagnostics"]
+  vim.diagnostic.handlers.virtual_lines = {
+    show = function(namespace, bufnr, diagnostics, opts)
+      print(vim.inspect(opts))
+      local ns = vim.diagnostic.get_namespace(namespace)
+      if not ns.user_data.virt_lines_ns then
+        ns.user_data.virt_lines_ns = vim.api.nvim_create_namespace("")
+      end
+      local virt_lines_ns = ns.user_data.virt_lines_ns
 
-  -- Wrap the original diagnostics handler to add our own logic.
-  vim.lsp.handlers["textDocument/publishDiagnostics"] = function(err, result, ctx, config)
-    -- Call regular handler:
-    orig_handler(err, result, ctx, config)
+      vim.api.nvim_buf_clear_namespace(bufnr, virt_lines_ns, 0, -1)
 
-    -- TODO: maybe only re-render for current line.
-    -- If so, the method that does rendering should be re-used to trigger on CursorHold or CursorHoldI
-
-    local bufnr = vim.uri_to_bufnr(result.uri)
-    if not bufnr then
-      -- Ths can happen, but I've no idea why:
-      return
-    end
-
-    if not vim.api.nvim_buf_is_loaded(bufnr) then
-      -- Some LSPs will yeild diagnostics for files we've not loaded, so trying
-      -- to access their buffers will fail.
-      --
-      -- XXX: Drawing should be done when they're loaded/attached. It's very
-      -- likely the LSP triggers some event when that happens too (didChange?).
-      return
-    end
-
-    update_buf(bufnr)
-  end
+      for i, diagnostic in ipairs(diagnostics) do
+        vim.api.nvim_buf_set_extmark(bufnr, virt_lines_ns, diagnostic.lnum, 0, {
+          id = i,
+          virt_lines = {
+            {
+              {
+                get_indentation_for_line(bufnr, diagnostic.lnum),
+                "",
+              },
+              {
+                "▼ " .. diagnostic.message,
+                highlight_groups[diagnostic.severity],
+              },
+            },
+          },
+          virt_lines_above = true,
+        })
+      end
+    end,
+    hide = function(namespace, bufnr)
+      local ns = vim.diagnostic.get_namespace(namespace)
+      if ns.user_data.virt_lines_ns then
+        vim.api.nvim_buf_clear_namespace(bufnr, ns.user_data.virt_lines_ns, 0, -1)
+      end
+    end,
+  }
 end
 
 return M
