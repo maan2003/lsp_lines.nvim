@@ -33,7 +33,6 @@ use({
   config = function()
     require("lsp_lines").register_lsp_virtual_lines()
   end,
-  requires = { "folke/trouble.nvim" },
 })
 ```
 

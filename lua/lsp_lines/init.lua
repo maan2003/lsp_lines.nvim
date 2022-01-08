@@ -1,8 +1,13 @@
-local util = require("trouble.util")
-
 local M = {}
 
 local indentation_regex = vim.regex([[^\s\+]])
+
+local highlight_groups = {
+  [vim.diagnostic.severity.ERROR] = "DiagnosticVirtualTextError",
+  [vim.diagnostic.severity.WARN] = "DiagnosticVirtualTextWarn",
+  [vim.diagnostic.severity.INFO] = "DiagnosticVirtualTextInfo",
+  [vim.diagnostic.severity.HINT] = "DiagnosticVirtualTextHint",
+}
 
 -- @param bufnr integer
 -- @param lnum integer
@@ -46,7 +51,7 @@ local function update_buf(bufnr)
           },
           {
             "▼ " .. diagnostic.message,
-            util.get_severity_label(util.severity[diagnostic.severity], "VirtualText"),
+            highlight_groups[diagnostic.severity],
           },
         },
       },
