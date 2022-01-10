@@ -64,6 +64,7 @@ vim.diagnostic.config({ virtual_lines = true })
 
 - Discussion or patches: ~whynothugo/lsp_lines.nvim@lists.sr.ht
 - Issues: https://todo.sr.ht/~whynothugo/lsp_lines.nvim
+- Tips: https://ko-fi.com/whynothugo
 
 # Licence
 
