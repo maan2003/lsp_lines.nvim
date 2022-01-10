@@ -37,6 +37,17 @@ M.register_lsp_virtual_lines = function()
 
   vim.diagnostic.handlers.virtual_lines = {
     show = function(namespace, bufnr, diagnostics, opts)
+      vim.validate({
+        namespace = { namespace, "n" },
+        bufnr = { bufnr, "n" },
+        diagnostics = {
+          diagnostics,
+          vim.tbl_islist,
+          "a list of diagnostics",
+        },
+        opts = { opts, "t", true },
+      })
+
       local ns = vim.diagnostic.get_namespace(namespace)
       if not ns.user_data.virt_lines_ns then
         ns.user_data.virt_lines_ns = vim.api.nvim_create_namespace("")
@@ -44,6 +55,8 @@ M.register_lsp_virtual_lines = function()
       local virt_lines_ns = ns.user_data.virt_lines_ns
 
       vim.api.nvim_buf_clear_namespace(bufnr, virt_lines_ns, 0, -1)
+
+      local prefix = opts.virtual_lines.prefix or "▼"
 
       for i, diagnostic in ipairs(diagnostics) do
         vim.api.nvim_buf_set_extmark(bufnr, virt_lines_ns, diagnostic.lnum, 0, {
@@ -55,7 +68,7 @@ M.register_lsp_virtual_lines = function()
                 "",
               },
               {
-                "▼ " .. diagnostic.message,
+                string.format("%s %s", prefix, diagnostic.message),
                 highlight_groups[diagnostic.severity],
               },
             },

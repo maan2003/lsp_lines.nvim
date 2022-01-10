@@ -46,7 +46,7 @@ vim.diagnostic.config({
 })
 ```
 
-# Enable / disable
+# Configuration
 
 This plugin's functionality can be disabled with:
 
@@ -58,6 +58,12 @@ And it can be re-enabled via:
 
 ```lua
 vim.diagnostic.config({ virtual_lines = true })
+```
+
+The prefix icon shown to the left of diagnostics can be configured with:
+
+```lua
+vim.diagnostic.config({ virtual_lines = { prefix = "🔥" } })
 ```
 
 # Contributing
