@@ -58,21 +58,30 @@ M.register_lsp_virtual_lines = function()
 
       local prefix = opts.virtual_lines.prefix or "▼"
 
-      for i, diagnostic in ipairs(diagnostics) do
-        vim.api.nvim_buf_set_extmark(bufnr, virt_lines_ns, diagnostic.lnum, 0, {
-          id = i,
-          virt_lines = {
+      for id, diagnostic in ipairs(diagnostics) do
+        local virt_lines = {}
+        local lprefix = prefix
+        local indentation = get_indentation_for_line(bufnr, diagnostic.lnum)
+
+        -- Some diagnostics have multiple lines. Split those into multiple
+        -- virtual lines, but only show the prefix for the first one.
+        for diag_line in diagnostic.message:gmatch("([^\n]+)") do
+          table.insert(virt_lines, {
             {
-              {
-                get_indentation_for_line(bufnr, diagnostic.lnum),
-                "",
-              },
-              {
-                string.format("%s %s", prefix, diagnostic.message),
-                highlight_groups[diagnostic.severity],
-              },
+              indentation,
+              "",
             },
-          },
+            {
+              string.format("%s %s", lprefix, diag_line),
+              highlight_groups[diagnostic.severity],
+            },
+          })
+          lprefix = " "
+        end
+
+        vim.api.nvim_buf_set_extmark(bufnr, virt_lines_ns, diagnostic.lnum, 0, {
+          id = id,
+          virt_lines = virt_lines,
           virt_lines_above = true,
         })
       end
