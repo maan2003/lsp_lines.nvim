@@ -1,34 +1,11 @@
 local M = {}
 
-local indentation_regex = vim.regex([[^\s\+]])
-
 local highlight_groups = {
   [vim.diagnostic.severity.ERROR] = "DiagnosticVirtualTextError",
   [vim.diagnostic.severity.WARN] = "DiagnosticVirtualTextWarn",
   [vim.diagnostic.severity.INFO] = "DiagnosticVirtualTextInfo",
   [vim.diagnostic.severity.HINT] = "DiagnosticVirtualTextHint",
 }
-
----@param bufnr integer
----@param lnum integer
----@return string
-local function get_indentation_for_line(bufnr, lnum)
-  local lines = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)
-
-  -- The line does not exist when a buffer is empty, though there may be
-  -- additional situations. Fall back gracefully whenever this happens.
-  if not vim.tbl_isempty(lines) then
-    local istart, iend = indentation_regex:match_str(lines[1])
-
-    if istart ~= nil then
-      -- XXX: The docs say `tabstop` should be respected, but this doesn't seem
-      -- to be happening (check this on go files).
-      return string.sub(lines[1], istart, iend)
-    end
-  end
-
-  return ""
-end
 
 -- Registers a wrapper-handler to render lsp lines.
 -- This should usually only be called once, during initialisation.
@@ -53,6 +30,14 @@ M.register_lsp_virtual_lines = function()
         opts = { opts, "t", true },
       })
 
+      table.sort(diagnostics, function(a, b)
+        if a.lnum ~= b.lnum then
+          return a.lnum < b.lnum
+        else
+          return a.col < b.col
+        end
+      end)
+
       local ns = vim.diagnostic.get_namespace(namespace)
       if not ns.user_data.virt_lines_ns then
         ns.user_data.virt_lines_ns = vim.api.nvim_create_namespace("")
@@ -61,33 +46,61 @@ M.register_lsp_virtual_lines = function()
 
       vim.api.nvim_buf_clear_namespace(bufnr, virt_lines_ns, 0, -1)
 
-      local prefix = opts.virtual_lines.prefix or "▼"
-
+      local last_line = -1
+      local last_prefix = {}
+      local last_col = 0
+      local virt_lines = {}
       for id, diagnostic in ipairs(diagnostics) do
-        local virt_lines = {}
-        local lprefix = prefix
-        local indentation = get_indentation_for_line(bufnr, diagnostic.lnum)
-
-        -- Some diagnostics have multiple lines. Split those into multiple
-        -- virtual lines, but only show the prefix for the first one.
-        for diag_line in diagnostic.message:gmatch("([^\n]+)") do
-          table.insert(virt_lines, {
-            {
-              indentation,
-              "",
-            },
-            {
-              string.format("%s %s", lprefix, diag_line),
-              highlight_groups[diagnostic.severity],
-            },
-          })
-          lprefix = " "
+        if diagnostic.lnum ~= last_line then
+          if last_line ~= -1 then
+            vim.api.nvim_buf_set_extmark(bufnr, virt_lines_ns, last_line, 0, {
+              id = id,
+              virt_lines = virt_lines,
+              virt_lines_above = false,
+            })
+          end
+          last_line = diagnostic.lnum
+          last_col = -1
+          last_prefix = {}
+          virt_lines = {}
         end
-
-        vim.api.nvim_buf_set_extmark(bufnr, virt_lines_ns, diagnostic.lnum, 0, {
+        if not diagnostic.message:find("^%s*$") then
+          local space = string.rep(" ", diagnostic.col - last_col - 1)
+          -- Some diagnostics have multiple lines. Split those into multiple
+          -- virtual lines, but only show the prefix for the first one.
+          local current_prefix = "└──── "
+          if diagnostic.col == last_col then
+            current_prefix = "──── "
+          end
+          local current_lines = {}
+          for diag_line in diagnostic.message:gmatch("([^\n]+)") do
+            if not diagnostic.message:find("^%s*$") then
+              local ln = {}
+              for _, val in ipairs(last_prefix) do
+                table.insert(ln, val)
+              end
+              table.insert(ln, {
+                space .. current_prefix .. diag_line,
+                highlight_groups[diagnostic.severity],
+              })
+              table.insert(current_lines, 1, ln)
+              current_prefix = "      "
+            end
+          end
+          for _, val in ipairs(current_lines) do
+            table.insert(virt_lines, 1, val)
+          end
+          if diagnostic.col ~= last_col then
+            table.insert(last_prefix, { space .. "│", highlight_groups[diagnostic.severity] })
+          end
+          last_col = diagnostic.col
+        end
+      end
+      if last_line ~= -1 then
+        vim.api.nvim_buf_set_extmark(bufnr, virt_lines_ns, last_line, 0, {
           id = id,
           virt_lines = virt_lines,
-          virt_lines_above = true,
+          virt_lines_above = false,
         })
       end
     end,
