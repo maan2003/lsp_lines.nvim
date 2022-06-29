@@ -9,8 +9,9 @@ local highlight_groups = {
   [vim.diagnostic.severity.HINT] = "DiagnosticVirtualTextHint",
 }
 
--- @param bufnr integer
--- @param lnum integer
+---@param bufnr integer
+---@param lnum integer
+---@return string
 local function get_indentation_for_line(bufnr, lnum)
   local lines = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)
 
@@ -36,6 +37,10 @@ M.register_lsp_virtual_lines = function()
   -- TODO: On LSP restart (e.g.: diagnostics cleared), errors don't go away.
 
   vim.diagnostic.handlers.virtual_lines = {
+    ---@param namespace number
+    ---@param bufnr number
+    ---@param diagnostics table
+    ---@param opts boolean
     show = function(namespace, bufnr, diagnostics, opts)
       vim.validate({
         namespace = { namespace, "n" },
@@ -86,6 +91,8 @@ M.register_lsp_virtual_lines = function()
         })
       end
     end,
+    ---@param namespace number
+    ---@param bufnr number
     hide = function(namespace, bufnr)
       local ns = vim.diagnostic.get_namespace(namespace)
       if ns.user_data.virt_lines_ns then
