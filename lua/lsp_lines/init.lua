@@ -11,9 +11,15 @@ local SPACE = 0
 local DIAGNOSTIC = 1
 local OVERLAP = 2
 
+-- Deprecated. Use `setup()` instead.
+M.register_lsp_virtual_lines = function()
+  print("lsp_lines.register_lsp_virtual_lines() is deprecated. use lsp_lines.setup() instead.")
+  M.setup()
+end
+
 -- Registers a wrapper-handler to render lsp lines.
 -- This should usually only be called once, during initialisation.
-M.register_lsp_virtual_lines = function()
+M.setup = function()
   -- TODO: When a diagnostic changes for the current line, the cursor is not shifted properly.
   -- TODO: On LSP restart (e.g.: diagnostics cleared), errors don't go away.
 

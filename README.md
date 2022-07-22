@@ -31,7 +31,7 @@ Using packer.nvim (should probably be registered _after_ `lspconfig`):
 use({
   "https://git.sr.ht/~whynothugo/lsp_lines.nvim",
   config = function()
-    require("lsp_lines").register_lsp_virtual_lines()
+    require("lsp_lines").setup()
   end,
 })
 ```
