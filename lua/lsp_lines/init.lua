@@ -68,30 +68,32 @@ M.register_lsp_virtual_lines = function()
           local space = string.rep(" ", diagnostic.col - last_col - 1)
           -- Some diagnostics have multiple lines. Split those into multiple
           -- virtual lines, but only show the prefix for the first one.
-          local current_prefix = "└──── "
+          local current_prefix = { "└──── ", highlight_groups[diagnostic.severity] }
           if diagnostic.col == last_col then
-            current_prefix = "──── "
+            current_prefix = { "──── ", highlight_groups[diagnostic.severity] }
           end
           local current_lines = {}
           for diag_line in diagnostic.message:gmatch("([^\n]+)") do
             if not diagnostic.message:find("^%s*$") then
-              local ln = {}
+              local ln = {} -- Virtual lines for this diagnostic.
               for _, val in ipairs(last_prefix) do
                 table.insert(ln, val)
               end
-              table.insert(ln, {
-                space .. current_prefix .. diag_line,
-                highlight_groups[diagnostic.severity],
-              })
+              -- Spaces are inserted separately to avoid applying the
+              -- background colour of diagnostic highlight group.
+              table.insert(ln, { space, "" })
+              table.insert(ln, current_prefix)
+              table.insert(ln, { diag_line, highlight_groups[diagnostic.severity] })
               table.insert(current_lines, 1, ln)
-              current_prefix = "      "
+              current_prefix = { "      ", "" }
             end
           end
           for _, val in ipairs(current_lines) do
             table.insert(virt_lines, 1, val)
           end
           if diagnostic.col ~= last_col then
-            table.insert(last_prefix, { space .. "│", highlight_groups[diagnostic.severity] })
+            table.insert(last_prefix, { space, "" })
+            table.insert(last_prefix, { "│", highlight_groups[diagnostic.severity] })
           end
           last_col = diagnostic.col
         end
