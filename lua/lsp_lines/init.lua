@@ -7,6 +7,10 @@ local highlight_groups = {
   [vim.diagnostic.severity.HINT] = "DiagnosticVirtualTextHint",
 }
 
+local SPACE = 0
+local DIAGNOSTIC = 1
+local OVERLAP = 2
+
 -- Registers a wrapper-handler to render lsp lines.
 -- This should usually only be called once, during initialisation.
 M.register_lsp_virtual_lines = function()
@@ -46,61 +50,86 @@ M.register_lsp_virtual_lines = function()
 
       vim.api.nvim_buf_clear_namespace(bufnr, virt_lines_ns, 0, -1)
 
-      local last_line = -1
-      local last_prefix = {}
-      local last_col = 0
-      local virt_lines = {}
+      local line_stacks = {}
+      local prev_lnum = -1
+      local prev_col = -1
       for id, diagnostic in ipairs(diagnostics) do
-        if diagnostic.lnum ~= last_line then
-          if last_line ~= -1 then
-            vim.api.nvim_buf_set_extmark(bufnr, virt_lines_ns, last_line, 0, {
-              id = id,
-              virt_lines = virt_lines,
-              virt_lines_above = false,
-            })
-          end
-          last_line = diagnostic.lnum
-          last_col = -1
-          last_prefix = {}
-          virt_lines = {}
+        diagnostic.id = id -- Tie the id to the actual object.
+
+        if line_stacks[diagnostic.lnum] == nil then
+          line_stacks[diagnostic.lnum] = {}
         end
-        if not diagnostic.message:find("^%s*$") then
-          local space = string.rep(" ", diagnostic.col - last_col - 1)
-          -- Some diagnostics have multiple lines. Split those into multiple
-          -- virtual lines, but only show the prefix for the first one.
-          local current_prefix = { "└──── ", highlight_groups[diagnostic.severity] }
-          if diagnostic.col == last_col then
-            current_prefix = { "──── ", highlight_groups[diagnostic.severity] }
-          end
-          local current_lines = {}
-          for diag_line in diagnostic.message:gmatch("([^\n]+)") do
-            if not diagnostic.message:find("^%s*$") then
-              local ln = {} -- Virtual lines for this diagnostic.
-              for _, val in ipairs(last_prefix) do
-                table.insert(ln, val)
+
+        local stack = line_stacks[diagnostic.lnum]
+
+        if diagnostic.lnum ~= prev_lnum then
+          table.insert(stack, { SPACE, string.rep(" ", diagnostic.col) })
+          table.insert(stack, { DIAGNOSTIC, diagnostic })
+        elseif diagnostic.col ~= prev_col then
+          table.insert(stack, { SPACE, string.rep(" ", diagnostic.col - prev_col - 1) })
+          table.insert(stack, { DIAGNOSTIC, diagnostic })
+        else
+          table.insert(stack, { OVERLAP, diagnostic.severity })
+          table.insert(stack, { DIAGNOSTIC, diagnostic })
+        end
+
+        prev_lnum = diagnostic.lnum
+        prev_col = diagnostic.col
+      end
+
+      for lnum, lelements in pairs(line_stacks) do
+        local virt_lines = {}
+        for i = #lelements, 1, -1 do -- last element goes on top
+          if lelements[i][1] == DIAGNOSTIC then
+            local diagnostic = lelements[i][2]
+
+            local left = {}
+            local overlap = false
+
+            -- Iterate the stack for this line to find elements on the left.
+            for j = 1, i - 1 do
+              local type = lelements[j][1]
+              local data = lelements[j][2]
+              if type == SPACE then
+                table.insert(left, { data, "" })
+              elseif type == DIAGNOSTIC then
+                -- If an overlap follows this, don't add an extra column.
+                if lelements[j + 1][1] ~= OVERLAP then
+                  table.insert(left, { "│", highlight_groups[data.severity] })
+                end
+                overlap = false
+              elseif type == OVERLAP then
+                overlap = true
               end
-              -- Spaces are inserted separately to avoid applying the
-              -- background colour of diagnostic highlight group.
-              table.insert(ln, { space, "" })
-              table.insert(ln, current_prefix)
-              table.insert(ln, { diag_line, highlight_groups[diagnostic.severity] })
-              table.insert(current_lines, 1, ln)
-              current_prefix = { "      ", "" }
+            end
+
+            local center
+            if overlap then
+              center = { { "├──── ", highlight_groups[diagnostic.severity] } }
+            else
+              center = { { "└──── ", highlight_groups[diagnostic.severity] } }
+            end
+
+            for msg_line in diagnostic.message:gmatch("([^\n]+)") do
+              local vline = {}
+              vim.list_extend(vline, left)
+              vim.list_extend(vline, center)
+              vim.list_extend(vline, { { msg_line, highlight_groups[diagnostic.severity] } })
+
+              table.insert(virt_lines, vline)
+
+              -- Special-case for continuation lines:
+              if overlap then
+                center = { { "│", highlight_groups[diagnostic.severity] }, { "     ", "" } }
+              else
+                center = { { "      ", "" } }
+              end
             end
           end
-          for _, val in ipairs(current_lines) do
-            table.insert(virt_lines, 1, val)
-          end
-          if diagnostic.col ~= last_col then
-            table.insert(last_prefix, { space, "" })
-            table.insert(last_prefix, { "│", highlight_groups[diagnostic.severity] })
-          end
-          last_col = diagnostic.col
         end
-      end
-      if last_line ~= -1 then
-        vim.api.nvim_buf_set_extmark(bufnr, virt_lines_ns, last_line, 0, {
-          id = id,
+
+        vim.api.nvim_buf_set_extmark(bufnr, virt_lines_ns, lnum, 0, {
+          id = lnum,
           virt_lines = virt_lines,
           virt_lines_above = false,
         })
