@@ -21,18 +21,9 @@ per line, but again, there's no handy way to read the whole thing.
 
 `lsp_lines` solves this issue.
 
-# Development
-
-Patches welcome. Reports bugs via the bug tracker or [public inbox][list]. This
-works well in its current state. Please report any issues you may find.
-
-[list]: https://lists.sr.ht/~whynothugo/public-inbox
-
-I've considered using the normal virtual text for all diagnostics and only
-using virtual lines for the currently focused line, but that requires some
-extra work I haven't had the time for.
-
 # Installation
+
+## With packer.nvim
 
 Using packer.nvim (this should probably be registered _after_ `lspconfig`):
 
@@ -45,6 +36,8 @@ use({
 })
 ```
 
+## With git
+
 You can algo just clone the repo into neovim's plug-in directory:
 
     mkdir -p $HOME/.local/share/nvim/site/pack/plugins/start/
@@ -54,6 +47,8 @@ You can algo just clone the repo into neovim's plug-in directory:
 And then in `init.lua`:
 
     require("lsp_lines").setup()
+
+# Setup
 
 It's recommended to also remove the regular virtual text diagnostics to avoid
 pointless duplication:
@@ -65,7 +60,7 @@ vim.diagnostic.config({
 })
 ```
 
-# Configuration
+# Usage
 
 This plugin's functionality can be disabled with:
 
@@ -79,17 +74,17 @@ And it can be re-enabled via:
 vim.diagnostic.config({ virtual_lines = true })
 ```
 
-The prefix icon shown to the left of diagnostics can be configured with:
-
-```lua
-vim.diagnostic.config({ virtual_lines = { prefix = "🔥" } })
-```
-
 # Contributing
 
 - Discussion or patches: ~whynothugo/lsp_lines.nvim@lists.sr.ht
-- Issues: https://todo.sr.ht/~whynothugo/lsp_lines.nvim
+- Bugs / Issues: https://todo.sr.ht/~whynothugo/lsp_lines.nvim
 - Tips: https://ko-fi.com/whynothugo
+
+# Development
+
+It would be nice to show connecting lines when there's relationship between
+diagnostics (as is the case with `rust_analyzer`). Oh perhaps surface them via
+hover().
 
 # Licence
 
