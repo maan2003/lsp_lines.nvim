@@ -17,6 +17,20 @@ M.register_lsp_virtual_lines = function()
   M.setup()
 end
 
+local function column_to_cell(bufnr, lnum, col)
+  local lines = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)
+
+  -- The line does not exist when a buffer is empty, though there may be
+  -- additional situations. Fall back gracefully whenever this happens.
+  if not vim.tbl_isempty(lines) then
+    local line = lines[1]
+    local sub = string.sub(line, 1, col)
+    return vim.fn.strdisplaywidth(sub, 0)
+  end
+
+  return col
+end
+
 -- Registers a wrapper-handler to render lsp lines.
 -- This should usually only be called once, during initialisation.
 M.setup = function()
@@ -64,12 +78,13 @@ M.setup = function()
         end
 
         local stack = line_stacks[diagnostic.lnum]
+        local real_col = column_to_cell(bufnr, diagnostic.lnum, diagnostic.col)
 
         if diagnostic.lnum ~= prev_lnum then
-          table.insert(stack, { SPACE, string.rep(" ", diagnostic.col) })
+          table.insert(stack, { SPACE, string.rep(" ", real_col) })
           table.insert(stack, { DIAGNOSTIC, diagnostic })
         elseif diagnostic.col ~= prev_col then
-          table.insert(stack, { SPACE, string.rep(" ", diagnostic.col - prev_col - 1) })
+          table.insert(stack, { SPACE, string.rep(" ", real_col - prev_col - 1) })
           table.insert(stack, { DIAGNOSTIC, diagnostic })
         else
           table.insert(stack, { OVERLAP, diagnostic.severity })
