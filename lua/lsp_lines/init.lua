@@ -58,9 +58,7 @@ M.setup = function()
       local line_stacks = {}
       local prev_lnum = -1
       local prev_col = -1
-      for id, diagnostic in ipairs(diagnostics) do
-        diagnostic.id = id -- Tie the id to the actual object.
-
+      for _, diagnostic in ipairs(diagnostics) do
         if line_stacks[diagnostic.lnum] == nil then
           line_stacks[diagnostic.lnum] = {}
         end
