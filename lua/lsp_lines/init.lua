@@ -11,6 +11,7 @@ local highlight_groups = {
 local SPACE = "space"
 local DIAGNOSTIC = "diagnostic"
 local OVERLAP = "overlap"
+local BLANK = "blank"
 
 -- Deprecated. Use `setup()` instead.
 M.register_lsp_virtual_lines = function()
@@ -92,7 +93,11 @@ M.setup = function()
           table.insert(stack, { OVERLAP, diagnostic.severity })
         end
 
-        table.insert(stack, { DIAGNOSTIC, diagnostic })
+        if diagnostic.message:find("^%s*$") then
+          table.insert(stack, { BLANK, diagnostic })
+        else
+          table.insert(stack, { DIAGNOSTIC, diagnostic })
+        end
 
         prev_lnum = diagnostic.lnum
         prev_col = diagnostic.col
@@ -110,30 +115,50 @@ M.setup = function()
 
             local left = {}
             local overlap = false
+            local multi = 0
 
             -- Iterate the stack for this line to find elements on the left.
             for j = 1, i - 1 do
               local type = lelements[j][1]
               local data = lelements[j][2]
               if type == SPACE then
-                table.insert(left, { data, "" })
+                if multi == 0 then
+                  table.insert(left, { data, "" })
+                else
+                  table.insert(left, { string.rep("─", data:len()), highlight_groups[diagnostic.severity] })
+                end
               elseif type == DIAGNOSTIC then
                 -- If an overlap follows this, don't add an extra column.
                 if lelements[j + 1][1] ~= OVERLAP then
                   table.insert(left, { "│", highlight_groups[data.severity] })
                 end
                 overlap = false
+              elseif type == BLANK then
+                if multi == 0 then
+                  table.insert(left, { "└", highlight_groups[data.severity] })
+                else
+                  table.insert(left, { "┴", highlight_groups[data.severity] })
+                end
+                multi = multi + 1
               elseif type == OVERLAP then
                 overlap = true
               end
             end
 
-            local center
-            if overlap then
-              center = { { "├──── ", highlight_groups[diagnostic.severity] } }
+            local center_symbol
+            if overlap and multi > 0 then
+              center_symbol = "┼"
+            elseif overlap then
+              center_symbol = "├"
+            elseif multi > 0 then
+              center_symbol = "┴"
             else
-              center = { { "└──── ", highlight_groups[diagnostic.severity] } }
+              center_symbol = "└"
             end
+            -- local center_text =
+            local center = {
+              { string.format("%s%s", center_symbol, "───── "), highlight_groups[diagnostic.severity] },
+            }
 
             -- TODO: We can draw on the left side if and only if:
             -- a. Is the last one stacked this line.
