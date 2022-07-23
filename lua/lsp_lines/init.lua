@@ -116,6 +116,12 @@ M.setup = function()
               center = { { "└──── ", highlight_groups[diagnostic.severity] } }
             end
 
+            -- TODO: We can draw on the left side if and only if:
+            -- a. Is the last one stacked this line.
+            -- b. Has enough space on the left.
+            -- c. Is just one line.
+            -- d. Is not an overlap.
+
             for msg_line in diagnostic.message:gmatch("([^\n]+)") do
               local vline = {}
               vim.list_extend(vline, left)
