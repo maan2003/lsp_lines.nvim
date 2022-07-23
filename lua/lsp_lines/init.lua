@@ -7,9 +7,10 @@ local highlight_groups = {
   [vim.diagnostic.severity.HINT] = "DiagnosticVirtualTextHint",
 }
 
-local SPACE = 0
-local DIAGNOSTIC = 1
-local OVERLAP = 2
+-- These don't get copied, do they? We only pass around and compare pointers, right?
+local SPACE = "space"
+local DIAGNOSTIC = "diagnostic"
+local OVERLAP = "overlap"
 
 -- Deprecated. Use `setup()` instead.
 M.register_lsp_virtual_lines = function()
@@ -69,6 +70,9 @@ M.setup = function()
 
       vim.api.nvim_buf_clear_namespace(bufnr, virt_lines_ns, 0, -1)
 
+      -- This loop reads line by line, and puts them into stacks with some
+      -- extra data, since rendering each line will require understanding what
+      -- is beneath it.
       local line_stacks = {}
       local prev_lnum = -1
       local prev_col = -1
@@ -97,6 +101,10 @@ M.setup = function()
 
       for lnum, lelements in pairs(line_stacks) do
         local virt_lines = {}
+
+        -- We read in the order opposite to insertion because the last
+        -- diagnostic for a real line, is rendered upstairs from the
+        -- second-to-last, and so forth from the rest.
         for i = #lelements, 1, -1 do -- last element goes on top
           if lelements[i][1] == DIAGNOSTIC then
             local diagnostic = lelements[i][2]
