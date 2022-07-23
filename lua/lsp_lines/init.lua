@@ -158,4 +158,11 @@ M.setup = function()
   }
 end
 
+---@return boolean
+M.toggle = function()
+  local new_value = not vim.diagnostic.config().virtual_lines
+  vim.diagnostic.config({ virtual_lines = new_value })
+  return new_value
+end
+
 return M

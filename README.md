@@ -74,6 +74,17 @@ And it can be re-enabled via:
 vim.diagnostic.config({ virtual_lines = true })
 ```
 
+A helper is also provided to toggle, which is convenient for mappings:
+
+```lua
+vim.keymap.set(
+  "",
+  "<Leader>l",
+  require("lsp_lines").toggle,
+  { desc = "Toggle lsp_lines" }
+)
+```
+
 # Contributing
 
 - Discussion or patches: ~whynothugo/lsp_lines.nvim@lists.sr.ht
