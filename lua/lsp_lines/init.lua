@@ -20,7 +20,6 @@ end
 -- Registers a wrapper-handler to render lsp lines.
 -- This should usually only be called once, during initialisation.
 M.setup = function()
-  -- TODO: When a diagnostic changes for the current line, the cursor is not shifted properly.
   -- TODO: On LSP restart (e.g.: diagnostics cleared), errors don't go away.
 
   vim.diagnostic.handlers.virtual_lines = {
