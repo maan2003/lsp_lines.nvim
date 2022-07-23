@@ -86,14 +86,13 @@ M.setup = function()
 
         if diagnostic.lnum ~= prev_lnum then
           table.insert(stack, { SPACE, string.rep(" ", real_col) })
-          table.insert(stack, { DIAGNOSTIC, diagnostic })
         elseif diagnostic.col ~= prev_col then
           table.insert(stack, { SPACE, string.rep(" ", real_col - prev_col - 1) })
-          table.insert(stack, { DIAGNOSTIC, diagnostic })
         else
           table.insert(stack, { OVERLAP, diagnostic.severity })
-          table.insert(stack, { DIAGNOSTIC, diagnostic })
         end
+
+        table.insert(stack, { DIAGNOSTIC, diagnostic })
 
         prev_lnum = diagnostic.lnum
         prev_col = diagnostic.col
