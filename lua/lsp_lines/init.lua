@@ -157,7 +157,7 @@ M.setup = function()
             end
             -- local center_text =
             local center = {
-              { string.format("%s%s", center_symbol, "───── "), highlight_groups[diagnostic.severity] },
+              { string.format("%s%s", center_symbol, "──── "), highlight_groups[diagnostic.severity] },
             }
 
             -- TODO: We can draw on the left side if and only if:
