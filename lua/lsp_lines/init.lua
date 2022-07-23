@@ -135,7 +135,7 @@ M.setup = function()
         end
 
         vim.api.nvim_buf_set_extmark(bufnr, virt_lines_ns, lnum, 0, {
-          id = lnum,
+          id = lnum + 1, -- Must be positive; +1 covers line=0.
           virt_lines = virt_lines,
           virt_lines_above = false,
         })
