@@ -1,0 +1,17 @@
+{
+  "name": "lsp_lines",
+  "version": "0.0.1",
+  "description": "Show diagnostics using virtual lines",
+  "main": "coc-extension/index.js",
+  "type": "commonjs",
+  "engines": {
+    "coc": "^0.0.81"
+  },
+  "activationEvents": [
+    "*"
+  ],
+  "contributes": {},
+  "devDependencies": {
+    "coc.nvim": "^0.0.81"
+  }
+}
