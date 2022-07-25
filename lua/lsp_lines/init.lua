@@ -19,18 +19,22 @@ M.register_lsp_virtual_lines = function()
   M.setup()
 end
 
-local function column_to_cell(bufnr, lnum, col)
+---Returns the distance between two columns in cells.
+---
+---Some characters (like tabs) take up more than one cell. A diagnostic aligned
+---under such characters needs to account for that and add that many spaces to
+---its left.
+---
+---@return integer
+local function distance_between_cols(bufnr, lnum, start_col, end_col)
   local lines = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)
-
-  -- The line does not exist when a buffer is empty, though there may be
-  -- additional situations. Fall back gracefully whenever this happens.
-  if not vim.tbl_isempty(lines) then
-    local line = lines[1]
-    local sub = string.sub(line, 1, col)
-    return vim.fn.strdisplaywidth(sub, 0)
+  if vim.tbl_isempty(lines) then
+    -- This can only happen is the line is somehow gone or out-of-bounds.
+    return 1
   end
 
-  return col
+  local sub = string.sub(lines[1], start_col, end_col)
+  return vim.fn.strdisplaywidth(sub, 0) -- these are indexed starting at 0
 end
 
 -- Registers a wrapper-handler to render lsp lines.
@@ -76,19 +80,27 @@ M.setup = function()
       -- is beneath it.
       local line_stacks = {}
       local prev_lnum = -1
-      local prev_col = -1
+      local prev_col = 0
       for _, diagnostic in ipairs(diagnostics) do
         if line_stacks[diagnostic.lnum] == nil then
           line_stacks[diagnostic.lnum] = {}
         end
 
         local stack = line_stacks[diagnostic.lnum]
-        local real_col = column_to_cell(bufnr, diagnostic.lnum, diagnostic.col)
 
         if diagnostic.lnum ~= prev_lnum then
-          table.insert(stack, { SPACE, string.rep(" ", real_col) })
+          table.insert(
+            stack,
+            { SPACE, string.rep(" ", distance_between_cols(bufnr, diagnostic.lnum, 0, diagnostic.col)) }
+          )
         elseif diagnostic.col ~= prev_col then
-          table.insert(stack, { SPACE, string.rep(" ", real_col - prev_col - 1) })
+          -- Clarification on the magic numbers below:
+          -- +1: indexing starting at 0 in one API but at 1 on the other.
+          -- -1: for non-first lines, the previous col is already drawn.
+          table.insert(
+            stack,
+            { SPACE, string.rep(" ", distance_between_cols(bufnr, diagnostic.lnum, prev_col + 1, diagnostic.col) - 1) }
+          )
         else
           table.insert(stack, { OVERLAP, diagnostic.severity })
         end
