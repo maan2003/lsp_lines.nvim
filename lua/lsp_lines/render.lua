@@ -43,7 +43,7 @@ end
 ---@param bufnr number
 ---@param diagnostics table
 ---@param opts boolean
----@param source 'native'|'coc'
+---@param source 'native'|'coc'|nil If nil, defaults to 'native'.
 function M.show(namespace, bufnr, diagnostics, opts, source)
   vim.validate({
     namespace = { namespace, "n" },
