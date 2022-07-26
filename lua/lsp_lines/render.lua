@@ -1,7 +1,5 @@
 local M = {}
 
-local api = vim.api
-
 local HIGHLIGHTS = {
   native = {
     [vim.diagnostic.severity.ERROR] = "DiagnosticVirtualTextError",
@@ -31,7 +29,7 @@ local BLANK = "blank"
 ---
 ---@return integer
 local function distance_between_cols(bufnr, lnum, start_col, end_col)
-  local lines = api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)
+  local lines = vim.api.nvim_buf_get_lines(bufnr, lnum, lnum + 1, false)
   if vim.tbl_isempty(lines) then
     -- This can only happen is the line is somehow gone or out-of-bounds.
     return 1
@@ -66,7 +64,7 @@ function M.show(namespace, bufnr, diagnostics, opts, source)
     end
   end)
 
-  api.nvim_buf_clear_namespace(bufnr, namespace, 0, -1)
+  vim.api.nvim_buf_clear_namespace(bufnr, namespace, 0, -1)
   if #diagnostics == 0 then
     return
   end
@@ -190,14 +188,14 @@ function M.show(namespace, bufnr, diagnostics, opts, source)
       end
     end
 
-    api.nvim_buf_set_extmark(bufnr, namespace, lnum, 0, { virt_lines = virt_lines })
+    vim.api.nvim_buf_set_extmark(bufnr, namespace, lnum, 0, { virt_lines = virt_lines })
   end
 end
 
 ---@param namespace number
 ---@param bufnr number
 function M.hide(namespace, bufnr)
-  api.nvim_buf_clear_namespace(bufnr, namespace, 0, -1)
+  vim.api.nvim_buf_clear_namespace(bufnr, namespace, 0, -1)
 end
 
 return M
