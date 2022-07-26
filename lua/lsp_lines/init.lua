@@ -23,7 +23,7 @@ M.setup = function()
     hide = function(namespace, bufnr)
       local ns = vim.diagnostic.get_namespace(namespace)
       if ns.user_data.virt_lines_ns then
-        render.hide(bufnr, ns.user_data.virt_lines_ns)
+        render.hide(ns.user_data.virt_lines_ns, bufnr )
       end
     end,
   }
