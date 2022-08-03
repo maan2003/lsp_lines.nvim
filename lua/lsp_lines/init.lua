@@ -36,7 +36,8 @@ M.setup = function()
           buffer = bufnr,
           callback = function ()
             render_current_line(diagnostics, ns.user_data.virt_lines_ns, bufnr, opts)
-          end
+          end,
+          group = "LspLines"
         })
         -- Also show diagnostics for the current line before the first CursorMoved event
         render_current_line(diagnostics, ns.user_data.virt_lines_ns, bufnr, opts)
