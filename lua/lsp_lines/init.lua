@@ -29,20 +29,21 @@ M.setup = function()
       if not ns.user_data.virt_lines_ns then
         ns.user_data.virt_lines_ns = vim.api.nvim_create_namespace("")
       end
-
       vim.api.nvim_clear_autocmds({ group = "LspLines" })
-      if opts.virtual_lines.only_current_line then
-        vim.api.nvim_create_autocmd("CursorMoved", {
-          buffer = bufnr,
-          callback = function ()
+      if opts.virtual_lines.enable then
+          if opts.virtual_lines.only_current_line then
+            vim.api.nvim_create_autocmd("CursorMoved", {
+              buffer = bufnr,
+              callback = function ()
+                render_current_line(diagnostics, ns.user_data.virt_lines_ns, bufnr, opts)
+              end,
+              group = "LspLines"
+            })
+            ---- Also show diagnostics for the current line before the first CursorMoved event
             render_current_line(diagnostics, ns.user_data.virt_lines_ns, bufnr, opts)
-          end,
-          group = "LspLines"
-        })
-        -- Also show diagnostics for the current line before the first CursorMoved event
-        render_current_line(diagnostics, ns.user_data.virt_lines_ns, bufnr, opts)
-      else
-        render.show(ns.user_data.virt_lines_ns, bufnr, diagnostics, opts)
+          else
+            render.show(ns.user_data.virt_lines_ns, bufnr, diagnostics, opts)
+          end
       end
     end,
     ---@param namespace number
@@ -59,8 +60,10 @@ end
 
 ---@return boolean
 M.toggle = function()
-  local new_value = not vim.diagnostic.config().virtual_lines
-  vim.diagnostic.config({ virtual_lines = new_value })
+  local new_value = not vim.diagnostic.config().virtual_lines.enable
+  local config = vim.diagnostic.config()
+  config.virtual_lines.enable = new_value
+  vim.diagnostic.config(config)
   return new_value
 end
 

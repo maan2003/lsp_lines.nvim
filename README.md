@@ -65,18 +65,18 @@ vim.diagnostic.config({
 This plugin's functionality can be disabled with:
 
 ```lua
-vim.diagnostic.config({ virtual_lines = false })
+vim.diagnostic.config({ virtual_lines = { enable = false } })
 ```
 
 And it can be re-enabled via:
 
 ```lua
-vim.diagnostic.config({ virtual_lines = true })
+vim.diagnostic.config({ virtual_lines = { enable = true } })
 ```
 
 To show virtual lines only for the current line's diagnostics:
 ```lua
-vim.diagnostic.config({ virtual_lines = { only_current_line = true } })
+vim.diagnostic.config({ virtual_lines = { enable = true, only_current_line = true } })
 ```
 
 A helper is also provided to toggle, which is convenient for mappings:
